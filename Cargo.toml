@@ -1,0 +1,31 @@
+[package]
+name = "pktbuilder"
+version = "0.1.0"
+authors = [ "Jukka Taimisto <jtaimisto@gmail.com>", "Ossi Herrala <oherrala@iki.fi>" ]
+edition = "2021"
+license = "MIT"
+
+description = "Safe builder for building packets"
+homepage = "https://github.com/sensorfu/pktbuilder#readme"
+repository = "https://github.com/sensorfu/pktbuilder"
+
+categories = [ "encoding", "no-std", "no-std:alloc" ]
+
+[lints.rust]
+deprecated-safe = { level = "deny", priority = -1 }
+future-incompatible = { level = "deny", priority = -1 }
+keyword-idents = { level = "deny", priority = -1 }
+let-underscore = { level = "deny", priority = -1 }
+nonstandard-style = { level = "deny", priority = -1 }
+refining-impl-trait = { level = "deny", priority = -1 }
+rust-2018-compatibility = { level = "deny", priority = -1 }
+rust-2018-idioms  = { level = "deny", priority = -1 }
+rust-2021-compatibility = { level = "deny", priority = -1 }
+rust-2024-compatibility = { level = "deny", priority = -1 }
+
+# Lonely lints
+unsafe-code = "deny"
+if_let_rescope = "allow"
+
+# allow cfg(kani)
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
