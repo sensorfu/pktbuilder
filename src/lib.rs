@@ -1,4 +1,5 @@
 #![no_std]
+#![doc = include_str!("../README.md")]
 
 use core::fmt::{self, Display};
 use core::net::{IpAddr, Ipv4Addr, Ipv6Addr};

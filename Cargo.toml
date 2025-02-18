@@ -4,6 +4,7 @@ version = "0.1.0"
 authors = [ "Jukka Taimisto <jtaimisto@gmail.com>", "Ossi Herrala <oherrala@iki.fi>" ]
 edition = "2021"
 license = "MIT"
+rust-version = "1.84"
 
 description = "Safe builder for building packets"
 homepage = "https://github.com/sensorfu/pktbuilder#readme"
@@ -25,7 +26,3 @@ rust-2024-compatibility = { level = "deny", priority = -1 }
 
 # Lonely lints
 unsafe-code = "deny"
-if_let_rescope = "allow"
-
-# allow cfg(kani)
-unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
