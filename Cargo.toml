@@ -10,7 +10,7 @@ description = "Safe builder for building packets"
 homepage = "https://github.com/sensorfu/pktbuilder#readme"
 repository = "https://github.com/sensorfu/pktbuilder"
 
-categories = [ "encoding", "no-std", "no-std:alloc" ]
+categories = [ "encoding", "no-std" ]
 
 [lints.rust]
 deprecated-safe = { level = "deny", priority = -1 }
