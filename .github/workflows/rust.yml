@@ -1,0 +1,36 @@
+name: Rust
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: sensorfu/setup-rust-action@85940738c5db112e81788a1903deb48f51a8f8c5
+      with:
+        components: rustfmt
+    - run: cargo fmt --verbose --check
+
+  clippy:
+      runs-on: ubuntu-latest
+      steps:
+      - uses: actions/checkout@v4
+      - uses: sensorfu/setup-rust-action@85940738c5db112e81788a1903deb48f51a8f8c5
+        with:
+          components: clippy
+      - run: cargo clippy --verbose
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: sensorfu/setup-rust-action@85940738c5db112e81788a1903deb48f51a8f8c5
+    - run: cargo test --verbose
