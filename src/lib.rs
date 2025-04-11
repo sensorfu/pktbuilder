@@ -77,8 +77,12 @@ pub struct Builder<'a> {
 /// Error type for builder operations
 #[derive(Debug)]
 pub enum Error {
+    /// Tried to write data over the buffer bounds
     OutOfBounds(usize, Offset),
+    /// Index was not within buffer
     OffsetError(Offset),
+    /// Invalid data encountered while building
+    InvalidData,
 }
 
 impl core::error::Error for Error {}
@@ -95,6 +99,9 @@ impl fmt::Display for Error {
             }
             Error::OffsetError(idx) => {
                 write!(f, "Invalid index {}", idx)
+            }
+            Error::InvalidData => {
+                write!(f, "Invalid data")
             }
         }
     }
