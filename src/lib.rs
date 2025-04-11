@@ -477,6 +477,26 @@ impl<'a> Builder<'a> {
         }
     }
 
+    /// Appends result of building `buildable` with self into the buffer.
+    ///
+    /// If error occurs while building `buildable` error is returned and the
+    /// internal index is reset to position it was before building. However,
+    /// the buffer might contain additional bytes written by `buildable`.
+    pub fn append<B>(&mut self, buildable: &B) -> Result<&mut Self, Error>
+    where
+        B: Buildable,
+    {
+        let index = self.index;
+        match buildable.build(self) {
+            Ok(()) => Ok(self),
+            Err(err) => {
+                // reset index back to where we were before building
+                self.index = index;
+                Err(err)
+            }
+        }
+    }
+
     /// Calculates a chekcsum of `len` bytes starting from `from`. The checksum
     /// is calculated using the function `checksum`. Resulting checksum value
     /// is stored to position starting from `sum_index`
@@ -516,6 +536,8 @@ pub trait Buildable {
 
 #[cfg(test)]
 mod test {
+    use crate::Buildable;
+
     use super::Error;
 
     use super::Builder;
@@ -990,6 +1012,108 @@ mod test {
         assert!(builder.pad_to_32(0x02).is_err());
         assert!(builder.pad_to_64(0x03).is_err());
         assert_eq!(buf, [0x01, 0x01, 0x00]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_append() -> Result {
+        struct Element {
+            data: u16,
+        }
+
+        impl Buildable for Element {
+            fn build(&self, builder: &mut Builder<'_>) -> core::result::Result<(), Error> {
+                builder.add_u16_be(self.data)?;
+                Ok(())
+            }
+        }
+
+        let elem = Element { data: 0x0203 };
+
+        let mut buf = [0; 4];
+        let mut builder = Builder::new(&mut buf);
+        builder.add_byte(0x01)?.append(&elem)?.add_byte(0x04)?;
+
+        assert_eq!(buf, [0x01, 0x02, 0x03, 0x04]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_append_at_end() -> Result {
+        struct Element {
+            data: u16,
+        }
+
+        impl Buildable for Element {
+            fn build(&self, builder: &mut Builder<'_>) -> core::result::Result<(), Error> {
+                builder.add_u16_be(self.data)?;
+                Ok(())
+            }
+        }
+
+        let elem = Element { data: 0x0304 };
+
+        let mut buf = [0; 4];
+        let mut builder = Builder::new(&mut buf);
+        builder.add_u16_be(0x0102)?.append(&elem)?;
+        assert_eq!(buf, [0x01, 0x02, 0x03, 0x04]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_append_no_space() -> Result {
+        struct Element {
+            data: u16,
+        }
+
+        impl Buildable for Element {
+            fn build(&self, builder: &mut Builder<'_>) -> core::result::Result<(), Error> {
+                builder.add_u16_be(self.data)?;
+                Ok(())
+            }
+        }
+
+        let elem = Element { data: 0x0304 };
+
+        let mut buf = [0; 4];
+        let mut builder = Builder::new(&mut buf);
+        builder.fill(3, 0x01)?;
+        assert!(builder.append(&elem).is_err());
+        assert_eq!(buf, [0x01, 0x01, 0x01, 0x00]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_append_partial() -> Result {
+        struct Element {
+            first: u8,
+            second: u16,
+            third: u8,
+        }
+
+        impl Buildable for Element {
+            fn build(&self, builder: &mut Builder<'_>) -> core::result::Result<(), Error> {
+                builder
+                    .add_byte(self.first)?
+                    .add_u16_be(self.second)?
+                    .add_byte(self.third)?;
+                Ok(())
+            }
+        }
+
+        let elem = Element {
+            first: 0x02,
+            second: 0x0304,
+            third: 0x04,
+        };
+        let mut buf = [0; 4];
+        let mut builder = Builder::new(&mut buf);
+        builder.add_byte(0x01)?;
+        assert!(builder.append(&elem).is_err());
+        assert_eq!(builder.index, 1.into());
+        assert_eq!(buf, [0x01, 0x02, 0x03, 0x4]);
+
         Ok(())
     }
 }
