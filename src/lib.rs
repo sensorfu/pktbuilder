@@ -497,6 +497,27 @@ impl<'a> Builder<'a> {
         }
     }
 
+    /// Appends result of building all elements from `buildables` with self into
+    /// the buffer.
+    ///
+    /// If error occurs while building `buildable` error is returned and the
+    /// internal index is reset to position it was before building. However,
+    /// the buffer might contain additional bytes written by `buildable`.
+    pub fn append_all<'b, B, I>(&mut self, buildables: I) -> Result<&mut Self, Error>
+    where
+        B: Buildable + 'b,
+        I: IntoIterator<Item = &'b B>,
+    {
+        let index = self.index;
+        for b in buildables {
+            if let Err(err) = self.append(b) {
+                // reset index back where we were befor starting.
+                self.index = index;
+                return Err(err);
+            }
+        }
+        Ok(self)
+    }
     /// Calculates a chekcsum of `len` bytes starting from `from`. The checksum
     /// is calculated using the function `checksum`. Resulting checksum value
     /// is stored to position starting from `sum_index`
@@ -1113,6 +1134,75 @@ mod test {
         assert!(builder.append(&elem).is_err());
         assert_eq!(builder.index, 1.into());
         assert_eq!(buf, [0x01, 0x02, 0x03, 0x4]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_append_all() -> Result {
+        struct Element {
+            first: u8,
+            second: u16,
+        }
+
+        impl Buildable for Element {
+            fn build(&self, builder: &mut Builder<'_>) -> core::result::Result<(), Error> {
+                builder.add_byte(self.first)?.add_u16_be(self.second)?;
+                Ok(())
+            }
+        }
+
+        let elements = [
+            Element {
+                first: 0x01,
+                second: 0x0203,
+            },
+            Element {
+                first: 0x04,
+                second: 0x0506,
+            },
+        ];
+        let mut buf = [0; 7];
+        let mut builder = Builder::new(&mut buf);
+        builder.add_byte(0x0a)?.append_all(&elements)?;
+        assert_eq!(builder.index, 7.into());
+        assert_eq!(buf, [0x0a, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_append_all_no_space() -> Result {
+        struct Element {
+            first: u8,
+            second: u16,
+        }
+
+        impl Buildable for Element {
+            fn build(&self, builder: &mut Builder<'_>) -> core::result::Result<(), Error> {
+                builder.add_byte(self.first)?.add_u16_be(self.second)?;
+                Ok(())
+            }
+        }
+
+        let elements = [
+            Element {
+                first: 0x01,
+                second: 0x0203,
+            },
+            Element {
+                first: 0x04,
+                second: 0x0506,
+            },
+        ];
+
+        let mut buf = [0; 5];
+        let mut builder = Builder::new(&mut buf);
+        assert!(builder.append_all(&elements).is_err());
+        // some data has been written to buffer, but its index should be set
+        // to start
+        assert_eq!(builder.index, 0.into());
+        assert_eq!(buf, [0x01, 0x02, 0x03, 0x04, 0x00]);
 
         Ok(())
     }
