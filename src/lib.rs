@@ -278,6 +278,132 @@ impl<'a> Builder<'a> {
         Ok(self)
     }
 
+    /// Puts `data` in big endian byte order into position pointed by `offset`.
+    /// Returns [Error] if `offset` is incorrect. Does not change the current
+    /// position on buffer.
+    pub fn put_u48_be(&mut self, offset: Offset, data: u64) -> Result<&mut Self, Error> {
+        debug_assert!(data >> 48 == 0, "expected 48bit data");
+        self.check_from_idx(offset, 6)?;
+        let bytes = data.to_be_bytes();
+        self.buf[offset] = bytes[2];
+        self.buf[offset + 1] = bytes[3];
+        self.buf[offset + 2] = bytes[4];
+        self.buf[offset + 3] = bytes[5];
+        self.buf[offset + 4] = bytes[6];
+        self.buf[offset + 5] = bytes[7];
+        Ok(self)
+    }
+
+    /// Adds `data` in big endian byte order into this buffer.
+    pub fn add_u48_be(&mut self, data: u64) -> Result<&mut Self, Error> {
+        self.put_u48_be(self.index, data)?;
+        self.index += 6;
+        Ok(self)
+    }
+
+    /// Puts `data` in little endian byte order into position pointed by `offset`.
+    /// Returns [Error] if `offset` is incorrect. Does not change the current
+    /// position on buffer.
+    pub fn put_u48_le(&mut self, offset: Offset, data: u64) -> Result<&mut Self, Error> {
+        debug_assert!(data >> 48 == 0, "expected 48bit data");
+        self.check_from_idx(offset, 6)?;
+        let bytes = data.to_le_bytes();
+        self.buf[offset] = bytes[0];
+        self.buf[offset + 1] = bytes[1];
+        self.buf[offset + 2] = bytes[2];
+        self.buf[offset + 3] = bytes[3];
+        self.buf[offset + 4] = bytes[4];
+        self.buf[offset + 5] = bytes[5];
+        Ok(self)
+    }
+
+    /// Adds `data` in little endian byte order into this buffer.
+    pub fn add_u48_le(&mut self, data: u64) -> Result<&mut Self, Error> {
+        self.put_u48_le(self.index, data)?;
+        self.index += 6;
+        Ok(self)
+    }
+
+    /// Adds u64 in big endian byte order into buffer
+    pub fn add_u64_be(&mut self, data: u64) -> Result<&mut Self, Error> {
+        self.put_u64_be(self.index, data)?;
+        self.index += 8;
+        Ok(self)
+    }
+
+    /// Puts `data` in big endian byte order into position pointed by `offset`.
+    /// Returns [Error] if `offset` is incorrect. Does not change the current
+    /// position on buffer.
+    pub fn put_u64_be(&mut self, offset: Offset, data: u64) -> Result<&mut Self, Error> {
+        self.check_from_idx(offset, 8)?;
+        let bytes = data.to_be_bytes();
+        self.buf[offset.0..offset.0 + 8]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, v)| *v = bytes[i]);
+        Ok(self)
+    }
+
+    /// Adds u64 in big endian byte order into buffer
+    pub fn add_u64_le(&mut self, data: u64) -> Result<&mut Self, Error> {
+        self.put_u64_le(self.index, data)?;
+        self.index += 8;
+        Ok(self)
+    }
+
+    /// Puts `data` in big endian byte order into position pointed by `offset`.
+    /// Returns [Error] if `offset` is incorrect. Does not change the current
+    /// position on buffer.
+    pub fn put_u64_le(&mut self, offset: Offset, data: u64) -> Result<&mut Self, Error> {
+        self.check_from_idx(offset, 8)?;
+        let bytes = data.to_le_bytes();
+        self.buf[offset.0..offset.0 + 8]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, v)| *v = bytes[i]);
+        Ok(self)
+    }
+
+    /// Adds u128 in big endian byte order into buffer
+    pub fn add_u128_be(&mut self, data: u128) -> Result<&mut Self, Error> {
+        self.put_u128_be(self.index, data)?;
+        self.index += 16;
+        Ok(self)
+    }
+
+    /// Puts `data` in big endian byte order into position pointed by `offset`.
+    /// Returns [Error] if `offset` is incorrect. Does not change the current
+    /// position on buffer.
+    pub fn put_u128_be(&mut self, offset: Offset, data: u128) -> Result<&mut Self, Error> {
+        self.check_from_idx(offset, 16)?;
+        let bytes = data.to_be_bytes();
+        self.buf[offset.0..offset.0 + 16]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, v)| *v = bytes[i]);
+        Ok(self)
+    }
+
+    /// Adds u128 in big endian byte order into buffer
+    pub fn add_u128_le(&mut self, data: u128) -> Result<&mut Self, Error> {
+        self.put_u128_le(self.index, data)?;
+        self.index += 16;
+        Ok(self)
+    }
+
+    /// Puts `data` in big endian byte order into position pointed by `offset`.
+    /// Returns [Error] if `offset` is incorrect. Does not change the current
+    /// position on buffer.
+    pub fn put_u128_le(&mut self, offset: Offset, data: u128) -> Result<&mut Self, Error> {
+        self.check_from_idx(offset, 16)?;
+        let bytes = data.to_le_bytes();
+        self.buf[offset.0..offset.0 + 16]
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, v)| *v = bytes[i]);
+        Ok(self)
+    }
+
     /// Adds contents of `data` into buffer.
     pub fn add(&mut self, data: &[u8]) -> Result<&mut Self, Error> {
         self.put(self.index, data)?;
@@ -675,6 +801,72 @@ mod test {
         let mut data = [0u8; 4];
         let mut builder = Builder::new(&mut data);
         assert!(builder.add_byte(0x01)?.add_u32_be(0xaabbccdd).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_u48() -> Result {
+        let mut data = [0u8; 8];
+
+        let mut builder = Builder::new(&mut data);
+        builder
+            .add_byte(0x01)?
+            .add_u48_be(0xaabbccddeeff)?
+            .add_byte(0x02)?;
+        assert_eq!(builder.len(), 8);
+        assert_eq!(data, [0x01, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff, 0x02]);
+
+        builder = Builder::new(&mut data);
+        builder
+            .add_byte(0x01)?
+            .add_u48_le(0xaabbccddeeff)?
+            .add_byte(0x02)?;
+        assert_eq!(builder.len(), 8);
+        assert_eq!(data, [0x01, 0xff, 0xee, 0xdd, 0xcc, 0xbb, 0xaa, 0x02]);
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_u48_too_long() -> Result {
+        let mut data = [0u8; 2];
+        let mut builder = Builder::new(&mut data);
+        assert!(builder.add_byte(0x01)?.add_u48_be(0xaabbccddeeff).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_u64() -> Result {
+        let mut data = [0u8; 10];
+        let mut builder = Builder::new(&mut data);
+        builder
+            .add_byte(0x01)?
+            .add_u64_be(0xffa1b2c3d4e5f6dd)?
+            .add_byte(0x02)?;
+        assert_eq!(
+            data,
+            [0x01, 0xff, 0xa1, 0xb2, 0xc3, 0xd4, 0xe5, 0xf6, 0xdd, 0x02]
+        );
+
+        builder = Builder::new(&mut data);
+        builder
+            .add_byte(0x01)?
+            .add_u64_le(0xffa1b2c3d4e5f6dd)?
+            .add_byte(0x02)?;
+        assert_eq!(
+            data,
+            [0x01, 0xdd, 0xf6, 0xe5, 0xd4, 0xc3, 0xb2, 0xa1, 0xff, 0x02]
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_u64_too_long() -> Result {
+        let mut data = [0u8; 8];
+        let mut builder = Builder::new(&mut data);
+        assert!(builder
+            .add_byte(0x01)?
+            .add_u64_be(0xffa1b2c3d4e5f6dd)
+            .is_err());
         Ok(())
     }
 
