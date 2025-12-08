@@ -422,15 +422,12 @@ impl<'a> Builder<'a> {
 
     /// Adds `addr` in big endian byte order into buffer.
     pub fn add_ipv6_address_be(&mut self, addr: Ipv6Addr) -> Result<&mut Self, Error> {
-        let bytes = addr.octets();
-        self.add(&bytes)
+        self.add_u128_be(addr.to_bits())
     }
 
     /// Adds `addr` in little endian byte order into buffer.
     pub fn add_ipv6_address_le(&mut self, addr: Ipv6Addr) -> Result<&mut Self, Error> {
-        let mut bytes = addr.octets();
-        bytes.reverse();
-        self.add(&bytes)
+        self.add_u128_le(addr.to_bits())
     }
 
     /// Puts the `addr` into buffer in big endian byte order starting from
@@ -441,8 +438,7 @@ impl<'a> Builder<'a> {
         offset: Offset,
         addr: Ipv6Addr,
     ) -> Result<&mut Self, Error> {
-        let data = addr.octets();
-        self.put(offset, &data)
+        self.put_u128_be(offset, addr.to_bits())
     }
 
     /// Puts the `addr` into buffer in little endian byte order starting from
@@ -453,22 +449,17 @@ impl<'a> Builder<'a> {
         offset: Offset,
         addr: Ipv6Addr,
     ) -> Result<&mut Self, Error> {
-        let mut data = addr.octets();
-        data.reverse();
-        self.put(offset, &data)
+        self.put_u128_le(offset, addr.to_bits())
     }
 
     /// Adds `addr` in big endian byte order into buffer.
     pub fn add_ipv4_address_be(&mut self, addr: Ipv4Addr) -> Result<&mut Self, Error> {
-        let bytes = addr.octets();
-        self.add(&bytes)
+        self.add_u32_be(addr.to_bits())
     }
 
     /// Adds `addr` in little endian byte order into buffer.
     pub fn add_ipv4_address_le(&mut self, addr: Ipv4Addr) -> Result<&mut Self, Error> {
-        let mut bytes = addr.octets();
-        bytes.reverse();
-        self.add(&bytes)
+        self.add_u32_le(addr.to_bits())
     }
 
     /// Puts the `addr` into buffer in big endian byte order starting from
@@ -479,8 +470,7 @@ impl<'a> Builder<'a> {
         offset: Offset,
         addr: Ipv4Addr,
     ) -> Result<&mut Self, Error> {
-        let bytes = addr.octets();
-        self.put(offset, &bytes)
+        self.put_u32_be(offset, addr.to_bits())
     }
 
     /// Puts the `addr` into buffer in little endian byte order starting from
@@ -491,9 +481,7 @@ impl<'a> Builder<'a> {
         offset: Offset,
         addr: Ipv4Addr,
     ) -> Result<&mut Self, Error> {
-        let mut bytes = addr.octets();
-        bytes.reverse();
-        self.put(offset, &bytes)
+        self.put_u32_le(offset, addr.to_bits())
     }
 
     /// Adds `addr` in big endian byte order into buffer
