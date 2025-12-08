@@ -651,6 +651,7 @@ impl<'a> Builder<'a> {
         }
         Ok(self)
     }
+
     /// Calculates a chekcsum of `len` bytes starting from `from`. The checksum
     /// is calculated using the function `checksum`. Resulting checksum value
     /// is stored to position starting from `sum_index`
@@ -690,15 +691,246 @@ pub trait Buildable {
 
 #[cfg(test)]
 mod test {
-    use crate::Buildable;
-
-    use super::Error;
-
-    use super::Builder;
     use core::net::{Ipv4Addr, Ipv6Addr};
     use core::panic;
 
+    use proptest::prelude::*;
+    use untrustended::ReaderExt;
+
+    use crate::{Buildable, Builder, Error};
+
     type Result = core::result::Result<(), super::Error>;
+
+    fn err<E: Into<untrustended::Error>>(err: E) -> untrustended::Error {
+        err.into()
+    }
+
+    proptest::proptest! {
+        #[test]
+        fn proptest_u8(value: u8) {
+            let mut data = [0xCD; 3];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_byte(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_byte().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u16_be(value: u16) {
+            let mut data = [0xCD; 4];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u16_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u16be().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u16_le(value: u16) {
+            let mut data = [0xCD; 4];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u16_le(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u16le().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u24_be(value in ..2_u32.pow(24)) {
+            let mut data = [0xCD; 5];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u24_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u24be().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u24_le(value in ..2_u32.pow(24)) {
+            let mut data = [0xCD; 5];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u24_le(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u24le().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u32_be(value: u32) {
+            let mut data = [0xCD; 6];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u32_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u32be().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u32_le(value: u32) {
+            let mut data = [0xCD; 6];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u32_le(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u32le().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u48_be(value in ..2_u64.pow(48)) {
+            let mut data = [0xCD; 8];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u48_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u48be().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u48_le(value in ..2_u64.pow(48)) {
+            let mut data = [0xCD; 8];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u48_le(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u48le().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u64_be(value: u64) {
+            let mut data = [0xCD; 10];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u64_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u64be().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u64_le(value: u64) {
+            let mut data = [0xCD; 10];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u64_le(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u64le().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u128_be(value: u128) {
+            let mut data = [0xCD; 18];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u128_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u128be().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_u128_le(value: u128) {
+            let mut data = [0xCD; 18];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_u128_le(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_u128le().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_ipv4addr_be(value: Ipv4Addr) {
+            let mut data = [0xCD; 6];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_ipv4_address_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_ipv4addr().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+
+        #[test]
+        fn proptest_ipv6addr_be(value: Ipv6Addr) {
+            let mut data = [0xCD; 18];
+            let mut builder = Builder::new(&mut data);
+            builder.add_byte(0x01)?.add_ipv6_address_be(value)?.add_byte(0x02)?;
+            assert!(builder.add_byte(0xFF).is_err());
+            let value2 = untrusted::Input::from(&data).read_all(TestCaseError::fail("EndOfInput"), |r| {
+                assert_eq!(0x01, r.read_byte().map_err(err)?);
+                let ret = r.read_ipv6addr().map_err(err)?;
+                assert_eq!(0x02, r.read_byte().map_err(err)?);
+                Ok(ret)
+            })?;
+            prop_assert_eq!(value, value2);
+        }
+    }
 
     #[test]
     fn test_add_byte() -> Result {

@@ -12,6 +12,11 @@ repository = "https://github.com/sensorfu/pktbuilder"
 
 categories = [ "encoding", "no-std" ]
 
+[dev-dependencies]
+proptest = { version = "1", default-features = false, features = [ "std" ] }
+untrusted = "0.9"
+untrustended = "0.4"
+
 [lints.rust]
 deprecated-safe = { level = "deny", priority = -1 }
 future-incompatible = { level = "deny", priority = -1 }
