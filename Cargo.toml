@@ -1,6 +1,6 @@
 [package]
 name = "pktbuilder"
-version = "0.1.1"
+version = "0.1.2"
 authors = [ "Jukka Taimisto <jtaimisto@gmail.com>", "Ossi Herrala <oherrala@iki.fi>" ]
 edition = "2021"
 license = "MIT"
